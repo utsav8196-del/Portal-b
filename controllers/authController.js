@@ -28,8 +28,10 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user || !user.password) return res.status(400).json({ message: 'Invalid credentials' });
 
     const match = await user.comparePassword(password);
     if (!match) return res.status(400).json({ message: 'Invalid credentials' });
@@ -45,7 +47,8 @@ const login = async (req, res) => {
       user: { id: user._id, email, name: user.name, role: user.role }
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Login failed. Please try again.' });
   }
 };
 
@@ -56,11 +59,13 @@ const logout = (req, res) => {
 
 const me = async (req, res) => {
   try {
+    if (!req.userId) return res.status(401).json({ message: 'Not authenticated' });
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Auth me error:', err);
+    res.status(401).json({ message: 'Invalid session' });
   }
 };
 

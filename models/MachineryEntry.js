@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const machineryEntrySchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
   machineryName: { type: String, required: true, trim: true },
   date: { type: Date, required: true, default: Date.now },
   challanNumber: { type: String, required: true, trim: true },

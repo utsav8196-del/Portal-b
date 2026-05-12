@@ -52,7 +52,7 @@ const createProject = async (req, res) => {
 
 const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find().populate('createdBy', 'name');
+    const projects = await Project.find({ createdBy: req.userId }).populate('createdBy', 'name');
     res.json(projects);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -61,7 +61,11 @@ const getProjects = async (req, res) => {
 
 const updateProject = async (req, res) => {
   try {
-    const project = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const project = await Project.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.userId },
+      req.body,
+      { new: true }
+    );
     if (!project) return res.status(404).json({ message: 'Project not found' });
     res.json(project);
   } catch (err) {
@@ -71,7 +75,7 @@ const updateProject = async (req, res) => {
 
 const deleteProject = async (req, res) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findOneAndDelete({ _id: req.params.id, createdBy: req.userId });
     if (!project) return res.status(404).json({ message: 'Project not found' });
     res.json({ message: 'Project deleted' });
   } catch (err) {
