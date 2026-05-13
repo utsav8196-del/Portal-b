@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+.ck-editor__editable_inline {
+  min-height: 150px !important;
+  max-height: 300px !important;
+  height: 200px !important;
+  overflow-y: auto !important;
+}
+
+.ck-content ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+.ck-content ol {
+  list-style-type: decimal;
+  padding-left: 20px;
+}
+
+/* view modal styling */
+.custom-html ul,
+.custom-html ol {
+  margin: 0 0 1rem 0;
+  padding-left: 1.25rem; /* base indent (pl-5) */
+}
+
+.custom-html ul ul,
+.custom-html ol ol,
+.custom-html ul ol,
+.custom-html ol ul {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 1.25rem; /* nested indent */
+}
+
+.custom-html li {
+  margin-bottom: 0.25rem;
+}
+
+/* Optional: style the markers */
+.custom-html ul {
+  list-style-type: disc;
+}
+
+.custom-html ol {
+  list-style-type: decimal;
+}
+
+.custom-html ul ul {
+  list-style-type: circle;
+}
+
+.custom-html ol ol {
+  list-style-type: lower-alpha;
+}
+
+/* Blockquote styling */
+.custom-html blockquote {
+  border-left: 4px solid #e5e7eb; /* gray-200 */
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #6b7280; /* gray-500 */
+  font-style: italic;
+}
