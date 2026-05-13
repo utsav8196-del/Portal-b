@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import Swal from 'sweetalert2';
 import { Search, Plus, Edit, Trash2, X } from 'lucide-react';
 import ProjectDropdown from '../components/ProjectDropdown';
@@ -44,11 +44,10 @@ export default function Labour() {
   const fetchData = async () => {
     try {
       const [workersRes, projectsRes] = await Promise.all([
-        axios.get('/api/labour', {
-          withCredentials: true,
+        api.get('/api/labour', {
           params: selectedProjectId ? { projectId: selectedProjectId } : {},
         }),
-        axios.get('/api/projects', { withCredentials: true }),
+        api.get('/api/projects'),
       ]);
       setWorkers(workersRes.data);
       setProjects(projectsRes.data);
@@ -139,10 +138,10 @@ export default function Labour() {
     }
     try {
       if (editingId) {
-        await axios.put(`/api/labour/${editingId}`, { ...form, projectId: form.projectId || form.project }, { withCredentials: true });
+        await api.put(`/api/labour/${editingId}`, { ...form, projectId: form.projectId || form.project });
         Swal.fire('Success', 'Worker updated', 'success');
       } else {
-        await axios.post('/api/labour', { ...form, projectId: form.projectId || form.project }, { withCredentials: true });
+        await api.post('/api/labour', { ...form, projectId: form.projectId || form.project });
         Swal.fire('Success', 'Worker added', 'success');
       }
       setShowModal(false);
@@ -164,7 +163,7 @@ export default function Labour() {
     });
     if (confirm.isConfirmed) {
       try {
-        await axios.delete(`/api/labour/${id}`, { withCredentials: true });
+        await api.delete(`/api/labour/${id}`);
         Swal.fire('Deleted', 'Worker has been removed', 'success');
         fetchData();
       } catch (err: any) {

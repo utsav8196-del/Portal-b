@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import Swal from 'sweetalert2';
 import { Plus, X, Package, Hash, Edit, Trash2 } from 'lucide-react';
 import ProjectDropdown from '../components/ProjectDropdown';
@@ -53,9 +53,7 @@ export default function Materials() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get<Record<string, MaterialEntry[]>>('/api/materials', {
-        withCredentials: true,
-      });
+      const res = await api.get<Record<string, MaterialEntry[]>>('/api/materials');
       const data = res.data;
 
       const summaries: MaterialSummary[] = Object.entries(data).map(([name, entries]) => {
@@ -90,7 +88,7 @@ export default function Materials() {
     let projectId = localStorage.getItem('selectedProjectId');
     if (!projectId) {
       try {
-        const projectsRes = await axios.get('/api/projects', { withCredentials: true });
+        const projectsRes = await api.get('/api/projects');
         const projects = projectsRes.data;
         if (projects.length === 0) {
           Swal.fire('No Project', 'Please create a project first.', 'warning');
@@ -106,7 +104,7 @@ export default function Materials() {
 
     setSubmittingMaterial(true);
     try {
-      await axios.post(
+      await api.post(
         '/api/materials',
         {
           materialName: trimmedName,
@@ -120,8 +118,7 @@ export default function Materials() {
             Amount: 0,
             Remarks: 'Initial material creation',
           },
-        },
-        { withCredentials: true }
+        }
       );
       Swal.fire('Success', `Material "${trimmedName}" added.`, 'success');
       setShowAddMaterialModal(false);
@@ -155,10 +152,9 @@ export default function Materials() {
 
     setSubmittingEdit(true);
     try {
-      await axios.put(
+      await api.put(
         `/api/materials/material/${encodeURIComponent(editingMaterial!.name)}`,
-        { newName },
-        { withCredentials: true }
+        { newName }
       );
       Swal.fire('Success', 'Material renamed', 'success');
       setShowEditModal(false);
@@ -183,9 +179,7 @@ export default function Materials() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.delete(`/api/materials/material/${encodeURIComponent(material.name)}`, {
-        withCredentials: true,
-      });
+      await api.delete(`/api/materials/material/${encodeURIComponent(material.name)}`);
       Swal.fire('Deleted', `Material "${material.name}" removed.`, 'success');
       fetchMaterials();
     } catch (err: any) {
@@ -222,7 +216,7 @@ export default function Materials() {
 
     setSubmittingRecord(true);
     try {
-      await axios.post(
+      await api.post(
         '/api/materials',
         {
           materialName: selectedMaterial!.name,
@@ -236,8 +230,7 @@ export default function Materials() {
             Amount: quantity * rate,
             Remarks: recordForm.remarks.trim(),
           },
-        },
-        { withCredentials: true }
+        }
       );
       Swal.fire('Success', 'Record added successfully', 'success');
       setShowAddRecordModal(false);

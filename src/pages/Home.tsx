@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid,
 } from 'recharts';
@@ -52,9 +52,9 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const [statsRes, projectsRes, materialsRes] = await Promise.all([
-          axios.get('/api/stats', { withCredentials: true }),
-          axios.get('/api/projects', { withCredentials: true }),
-          axios.get('/api/materials', { withCredentials: true }),
+          api.get('/api/stats'),
+          api.get('/api/projects'),
+          api.get('/api/materials'),
         ]);
 
         const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : [];
@@ -107,7 +107,7 @@ export default function Home() {
 
     setMaterialSubmitting(true);
     try {
-      await axios.post('/api/materials', {
+      await api.post('/api/materials', {
         materialName: trimmedName,
         projectId,
         entry: {
@@ -119,7 +119,7 @@ export default function Home() {
           Amount: 0,
           Remarks: 'Initial material creation',
         },
-      }, { withCredentials: true });
+      });
 
       localStorage.setItem('selectedProjectId', projectId);
       window.dispatchEvent(new Event('storage'));
@@ -129,7 +129,7 @@ export default function Home() {
       
       // Refresh cement quantity after adding material
       setCementLoading(true);
-      const materialsRes = await axios.get('/api/materials', { withCredentials: true });
+      const materialsRes = await api.get('/api/materials');
       const materialsData = materialsRes.data as Record<string, MaterialEntry[]>;
       const cementEntries = Object.entries(materialsData).find(
         ([name]) => name.toLowerCase() === 'cement'

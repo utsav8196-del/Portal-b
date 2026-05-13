@@ -137,7 +137,7 @@
 
 import { Menu, LogOut, User, Settings, ChevronDown, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState, useRef } from 'react';
@@ -153,7 +153,7 @@ export default function Header({ toggleSidebar }) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get('/api/auth/me', { withCredentials: true });
+        const res = await api.get('/api/auth/me');
         setUserName(res.data.name || res.data.email);
       } catch {
         // ignore
@@ -186,7 +186,7 @@ export default function Header({ toggleSidebar }) {
       });
       if (!result.isConfirmed) return;
 
-      await axios.post('/api/auth/logout', {}, { withCredentials: true });
+      await api.post('/api/auth/logout', {});
       logout();
       Swal.fire('Logged out!', '', 'success');
       navigate('/login');

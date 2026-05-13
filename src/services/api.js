@@ -1,27 +1,11 @@
-// import axios from 'axios';
-
-// // Use environment variable if set, otherwise empty string (relies on Vite proxy)
-// const baseURL = import.meta.env.VITE_API_URL || '';
-
-// const api = axios.create({
-//   baseURL,
-//   withCredentials: true,
-// });
-
-// // Optional: Add a request interceptor to log the actual URL being called
-// api.interceptors.request.use(request => {
-//   console.log('Starting Request:', request.baseURL, request.url);
-//   return request;
-// });
-
-// export default api;
-
-
-
 import axios from 'axios';
+import { normalizeApiBaseUrl } from '../utils/apiBaseUrl';
+
+/** Empty in dev → Vite proxies `/api` to the backend. In production, set `VITE_API_URL` on the host (e.g. Vercel) to your API origin. */
+const baseURL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || '');
 
 const api = axios.create({
-  baseURL: '',        // empty → calls go to same origin (Vite will proxy /api)
+  baseURL,
   withCredentials: true,
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import {
   ArrowLeft,
   IndianRupee,
@@ -44,8 +44,7 @@ export default function MaterialDetail() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/materials', {
-        withCredentials: true,
+      const res = await api.get('/api/materials', {
         params: { materialName: decodedName },
       });
       const materialData = res.data[decodedName] || [];
@@ -141,7 +140,7 @@ export default function MaterialDetail() {
 
     setSubmitting(true);
     try {
-      await axios.post(
+      await api.post(
         '/api/materials',
         {
           materialName: decodedName,
@@ -155,8 +154,7 @@ export default function MaterialDetail() {
             Amount: quantity * rate,
             Remarks: recordForm.remarks.trim(),
           },
-        },
-        { withCredentials: true }
+        }
       );
 
       Swal.fire('Success', 'Record added successfully', 'success');

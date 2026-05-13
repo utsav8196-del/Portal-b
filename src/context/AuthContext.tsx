@@ -79,7 +79,7 @@
 
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 interface AuthContextType {
   isAuth: boolean;
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get('/api/auth/me', { withCredentials: true });
+      const response = await api.get('/api/auth/me');
       setIsAuth(true);
       const role = response.data.role || 'user';
       setUserRole(role);
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserRole(null);
     localStorage.removeItem('userRole');
     // Optionally call backend logout endpoint
-    axios.post('/api/auth/logout', {}, { withCredentials: true }).catch(console.error);
+    api.post('/api/auth/logout', {}).catch(console.error);
   };
 
   return (

@@ -1,11 +1,16 @@
 import axios, { AxiosError, AxiosResponse, AxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
+import { normalizeApiBaseUrl } from "../apiBaseUrl";
 
-export const BASE_API_URL = "http://localhost:5001";
+/** Same rules as `src/services/api.js`: dev may leave unset (Vite proxy); production needs `VITE_API_URL`. */
+export const BASE_API_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_URL || ""
+);
 
 // Create axios instance
 export const api = axios.create({
   baseURL: BASE_API_URL,
+  withCredentials: true,
 });
 
 // Request interceptor
@@ -42,11 +47,10 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         // Call refresh endpoint (assumes your server reads refresh token from HTTP-only cookie)
-        const res = await axios.post(
-          `${BASE_API_URL}/api/auth/refresh_token`,
-          {},
-          { withCredentials: true }
-        );
+        const refreshUrl = BASE_API_URL
+          ? `${BASE_API_URL}/api/auth/refresh_token`
+          : "/api/auth/refresh_token";
+        const res = await axios.post(refreshUrl, {}, { withCredentials: true });
 
         const newAccessToken = res.data.accessToken;
         Cookies.set("accessToken", newAccessToken);

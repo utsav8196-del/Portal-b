@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +14,7 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/auth/register', { email, password, name }, { withCredentials: true });
+      const response = await api.post('/api/auth/register', { email, password, name });
       const userRole = response.data.user?.role || 'user';
       login(userRole); // updates context and localStorage
       Swal.fire('Success', 'Registered and logged in', 'success');

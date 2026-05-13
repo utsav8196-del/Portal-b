@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import {
   Package,
   AlertCircle,
@@ -32,13 +32,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Fetch projects
-    axios.get("/api/projects", { withCredentials: true })
+    api.get("/api/projects")
       .then(res => setProjects(res.data || []))
       .catch(err => console.error(err))
       .finally(() => setProjectsLoading(false));
 
     // Fetch materials
-    axios.get("/api/materials", { withCredentials: true })
+    api.get("/api/materials")
       .then(res => {
         const data = res.data; // should be grouped object: { "Sand": [...], ... }
         const summaries = Object.entries(data).map(([name, entries]: [string, any]) => {

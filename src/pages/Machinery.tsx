@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import Swal from 'sweetalert2';
 import { Search, Plus, Edit, Trash2, X } from 'lucide-react';
 import ProjectDropdown from '../components/ProjectDropdown';
@@ -45,8 +45,7 @@ export default function Machinery() {
 
   const fetchEntries = async () => {
     try {
-      const res = await axios.get('/api/machinery', {
-        withCredentials: true,
+      const res = await api.get('/api/machinery', {
         params: selectedProjectId ? { projectId: selectedProjectId } : {},
       });
       setEntries(res.data);
@@ -161,15 +160,11 @@ export default function Machinery() {
 
     try {
       if (editingId) {
-        await axios.put(`/api/machinery/${editingId}`, form, {
-          withCredentials: true,
-        });
+        await api.put(`/api/machinery/${editingId}`, form);
 
         Swal.fire('Success', 'Entry updated', 'success');
       } else {
-        await axios.post('/api/machinery', form, {
-          withCredentials: true,
-        });
+        await api.post('/api/machinery', form);
 
         Swal.fire('Success', 'Entry added', 'success');
       }
@@ -198,9 +193,7 @@ export default function Machinery() {
 
     if (confirm.isConfirmed) {
       try {
-        await axios.delete(`/api/machinery/${id}`, {
-          withCredentials: true,
-        });
+        await api.delete(`/api/machinery/${id}`);
 
         Swal.fire('Deleted', 'Entry removed', 'success');
         fetchEntries();

@@ -614,7 +614,7 @@
 // }
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import {
   Home,
   FolderKanban,
@@ -652,7 +652,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }) 
   // Fetch material names
   const fetchMaterialNames = async () => {
     try {
-      const res = await axios.get('/api/materials/names', { withCredentials: true });
+      const res = await api.get('/api/materials/names');
       setMaterialNames(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       setMaterialNames([]);
@@ -662,7 +662,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }) 
   // Fetch distinct machinery names
   const fetchMachineryNames = async () => {
     try {
-      const res = await axios.get('/api/machinery', { withCredentials: true });
+      const res = await api.get('/api/machinery');
       const entries = res.data;
       const uniqueNames = [...new Set(entries.map((e) => e.machineryName))].sort();
       setMachineryNames(uniqueNames);

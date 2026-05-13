@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import Swal from 'sweetalert2';
 import { Search, Plus, Edit, Trash2, X, MapPin, Calendar } from 'lucide-react';
 
@@ -31,7 +31,7 @@ export default function Projects() {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get('/api/projects', { withCredentials: true });
+      const res = await api.get('/api/projects');
       setProjects(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       Swal.fire('Error', 'Failed to load projects', 'error');
@@ -93,10 +93,10 @@ export default function Projects() {
     if (!validateDates(form.startDate, form.endDate)) return;
     try {
       if (editingId) {
-        await axios.put(`/api/projects/${editingId}`, form, { withCredentials: true });
+        await api.put(`/api/projects/${editingId}`, form);
         Swal.fire('Success', 'Project updated', 'success');
       } else {
-        await axios.post('/api/projects', form, { withCredentials: true });
+        await api.post('/api/projects', form);
         Swal.fire('Success', 'Project created', 'success');
       }
       setShowModal(false);
@@ -111,7 +111,7 @@ export default function Projects() {
     const confirm = await Swal.fire({ title: 'Delete project?', text: 'This action cannot be undone', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' });
     if (confirm.isConfirmed) {
       try {
-        await axios.delete(`/api/projects/${id}`, { withCredentials: true });
+        await api.delete(`/api/projects/${id}`);
         Swal.fire('Deleted', 'Project removed', 'success');
         fetchProjects();
       } catch (err: any) {

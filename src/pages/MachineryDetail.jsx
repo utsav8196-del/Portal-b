@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import {
   ArrowLeft,
   Truck,
@@ -45,7 +45,7 @@ export default function MachineryDetail() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/machinery', { withCredentials: true });
+      const res = await api.get('/api/machinery');
       const filtered = res.data.filter((entry) => entry.machineryName === decodedName);
       setAllEntries(filtered);
     } catch (err) {
@@ -139,7 +139,7 @@ export default function MachineryDetail() {
 
     setSubmitting(true);
     try {
-      await axios.post(
+      await api.post(
         '/api/machinery',
         {
           projectId: recordForm.projectId,
@@ -151,8 +151,7 @@ export default function MachineryDetail() {
           quantity,
           rate,
           remarks: recordForm.remarks.trim(),
-        },
-        { withCredentials: true }
+        }
       );
       Swal.fire('Success', 'Machinery record added successfully', 'success');
       setShowAddModal(false);

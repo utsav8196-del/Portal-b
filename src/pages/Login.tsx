@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/auth/login', { email, password }, { withCredentials: true });
+      const response = await api.post('/api/auth/login', { email, password });
       const userRole = response.data.user?.role || 'user';
       login(userRole); // updates context and localStorage
       Swal.fire('Success', 'Logged in', 'success');
