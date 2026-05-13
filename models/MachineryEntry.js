@@ -13,7 +13,6 @@ const machineryEntrySchema = new mongoose.Schema({
   remarks: { type: String, default: '' }
 }, { timestamps: true });
 
-// Auto-calculate amount before saving
 machineryEntrySchema.pre('save', function(next) {
   this.amount = this.quantity * this.rate;
   next();

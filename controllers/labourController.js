@@ -1,44 +1,3 @@
-// const Labour = require('../models/Labour');
-
-// exports.getLabour = async (req, res) => {
-//   try {
-//     const labour = await Labour.find().populate('project', 'name');
-//     res.json(labour);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// exports.addLabour = async (req, res) => {
-//   try {
-//     const labour = new Labour(req.body);
-//     await labour.save();
-//     res.status(201).json(labour);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// exports.updateLabour = async (req, res) => {
-//   try {
-//     const labour = await Labour.findByIdAndUpdate(req.params.id, req.body, { new: true });
-//     res.json(labour);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// exports.deleteLabour = async (req, res) => {
-//   try {
-//     await Labour.findByIdAndDelete(req.params.id);
-//     res.json({ message: 'Deleted' });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-
-
 const Labour = require('../models/Labour');
 const Project = require('../models/Project');
 
@@ -53,9 +12,9 @@ const getLabour = async (req, res) => {
     if (req.query.projectId) {
       const project = await ensureProjectAccess(req.query.projectId, req.userId);
       if (!project) return res.status(404).json({ message: 'Project not found' });
-      query.$or = [{ projectId: req.query.projectId }, { project: req.query.projectId }];
+      query.projectId = req.query.projectId;
     }
-    const labour = await Labour.find(query).populate('project', 'name').populate('projectId', 'name');
+    const labour = await Labour.find(query).populate('projectId', 'name');
     res.json(labour);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -64,10 +23,14 @@ const getLabour = async (req, res) => {
 
 const addLabour = async (req, res) => {
   try {
-    const projectId = req.body.projectId || req.body.project;
+    const { name, role, projectId, hourlyRate } = req.body;
+    if (!name) return res.status(400).json({ message: 'Name is required' });
+    if (!projectId) return res.status(400).json({ message: 'Project is required' });
+    
     const project = await ensureProjectAccess(projectId, req.userId);
     if (!project) return res.status(400).json({ message: 'Valid project is required' });
-    const labour = new Labour({ ...req.body, projectId, project: projectId });
+    
+    const labour = new Labour({ name, role, projectId, hourlyRate });
     await labour.save();
     res.status(201).json(labour);
   } catch (err) {
@@ -77,15 +40,23 @@ const addLabour = async (req, res) => {
 
 const updateLabour = async (req, res) => {
   try {
-    const projectId = req.body.projectId || req.body.project;
-    const project = await ensureProjectAccess(projectId, req.userId);
-    if (!project) return res.status(400).json({ message: 'Valid project is required' });
-    const labour = await Labour.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, projectId, project: projectId },
-      { new: true }
-    );
+    const { id } = req.params;
+    const { name, role, projectId, hourlyRate } = req.body;
+    
+    const labour = await Labour.findById(id);
     if (!labour) return res.status(404).json({ message: 'Labour not found' });
+    
+    if (projectId && projectId !== labour.projectId?.toString()) {
+      const project = await ensureProjectAccess(projectId, req.userId);
+      if (!project) return res.status(400).json({ message: 'Valid project is required' });
+    }
+    
+    labour.name = name || labour.name;
+    labour.role = role !== undefined ? role : labour.role;
+    labour.projectId = projectId || labour.projectId;
+    labour.hourlyRate = hourlyRate !== undefined ? hourlyRate : labour.hourlyRate;
+    
+    await labour.save();
     res.json(labour);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -94,11 +65,12 @@ const updateLabour = async (req, res) => {
 
 const deleteLabour = async (req, res) => {
   try {
-    const labour = await Labour.findById(req.params.id);
+    const { id } = req.params;
+    const labour = await Labour.findById(id);
     if (!labour) return res.status(404).json({ message: 'Labour not found' });
-    const projectId = labour.projectId || labour.project;
-    if (projectId) {
-      const project = await ensureProjectAccess(projectId, req.userId);
+    
+    if (labour.projectId) {
+      const project = await ensureProjectAccess(labour.projectId, req.userId);
       if (!project) return res.status(403).json({ message: 'Not authorized for this worker' });
     }
     await labour.deleteOne();

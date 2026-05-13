@@ -4,18 +4,27 @@ const materialEntrySchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
   materialName: { type: String, required: true, trim: true },
   date: { type: Date, required: true, default: Date.now },
-  challanNumber: { type: String, trim: true },
-  vehicleNumber: { type: String, trim: true },
-  supplierName: { type: String, required: true, trim: true },
-  quantity: { type: Number, required: true, min: 0 },
-  rate: { type: Number, required: true, min: 0 },
-  amount: { type: Number, required: true }, // quantity * rate
+  data: { type: mongoose.Schema.Types.Mixed, default: {} },
+  quantity: { type: Number, default: 0 },
+  rate: { type: Number, default: 0 },
+  amount: { type: Number, default: 0 },
   remarks: { type: String, default: '' }
-}, { timestamps: true });
+}, { timestamps: true, strict: false }); 
 
-// Auto‑calculate amount before saving
-materialEntrySchema.pre('save', function(next) {
-  this.amount = this.quantity * this.rate;
+materialEntrySchema.pre('save', function (next) {
+  let qty = this.data.Quantity || this.data.Weight || this.data.Bags || this.data.quantity || 0;
+  let r = this.data.Rate || this.data.rate || 0;
+  if (!qty && this.quantity) qty = this.quantity;
+  if (!r && this.rate) r = this.rate;
+
+  this.quantity = qty;
+  this.rate = r;
+  this.amount = qty * r;
+
+  if (!this.data.Quantity && qty) this.data.Quantity = qty;
+  if (!this.data.Rate && r) this.data.Rate = r;
+  if (!this.data.Amount) this.data.Amount = this.amount;
+
   next();
 });
 

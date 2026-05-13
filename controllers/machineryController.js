@@ -6,7 +6,6 @@ const ensureProjectAccess = async (projectId, userId) => {
   return Project.findOne({ _id: projectId, createdBy: userId });
 };
 
-// Get all entries (sorted by date descending)
 const getMachineryEntries = async (req, res) => {
   try {
     const query = {};
@@ -22,7 +21,6 @@ const getMachineryEntries = async (req, res) => {
   }
 };
 
-// Add a new entry
 const addMachineryEntry = async (req, res) => {
   try {
     const { projectId, machineryName, date, challanNumber, vehicleNumber, description, quantity, rate, remarks } = req.body;
@@ -51,7 +49,6 @@ const addMachineryEntry = async (req, res) => {
   }
 };
 
-// Update an entry
 const updateMachineryEntry = async (req, res) => {
   try {
     const { id } = req.params;
@@ -79,8 +76,6 @@ const updateMachineryEntry = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-// Delete an entry
 const deleteMachineryEntry = async (req, res) => {
   try {
     const { id } = req.params;

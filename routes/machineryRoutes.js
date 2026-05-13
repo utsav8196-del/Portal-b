@@ -8,7 +8,7 @@ const {
 const auth = require('../middleware/auth');
 
 const router = express.Router();
-router.use(auth);   // protect all machinery routes
+router.use(auth);
 
 router.get('/', getMachineryEntries);
 router.post('/', addMachineryEntry);

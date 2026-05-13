@@ -19,7 +19,6 @@ const app = express();
 
 connectDB();
 
-// Seed admin user if none exists
 const createAdminIfNeeded = async () => {
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
@@ -46,7 +45,7 @@ mongoose.connection.once('open', async () => {
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: 'https://portal-lovat-nine.vercel.app/', credentials: true }));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);

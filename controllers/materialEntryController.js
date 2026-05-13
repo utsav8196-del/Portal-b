@@ -29,7 +29,6 @@ const getMaterialScopeQuery = async (materialName, projectId, userId) => {
   return query;
 };
 
-// Get all entries (grouped by materialName) – exactly what your frontend wants
 const getAllEntries = async (req, res) => {
   try {
     const query = {};
@@ -45,28 +44,26 @@ const getAllEntries = async (req, res) => {
       ];
     }
     if (req.query.materialName) query.materialName = req.query.materialName;
+
     const entries = await MaterialEntry.find(query).populate('projectId', 'name').sort({ date: -1 });
+
     const grouped = entries.reduce((acc, entry) => {
       const material = entry.materialName;
       if (!acc[material]) acc[material] = [];
-      // Convert to plain object and remove internal fields
-      const obj = entry.toObject();
-      delete obj.__v;
-      delete obj._id;
-      delete obj.materialName;
-      // Customise field names to match frontend expectations (optional)
+
       const frontendEntry = {
-        Date: obj.date.toISOString().slice(0, 10),
-        'Challan Number': obj.challanNumber,
-        'Vehicle Number': obj.vehicleNumber,
-        'Supplier Name': obj.supplierName,
-        Quantity: obj.quantity,
-        Rate: obj.rate,
-        Amount: obj.amount,
-        Remarks: obj.remarks,
+        _id: entry._id,
         projectId: entry.projectId?._id || entry.projectId,
         projectName: entry.projectId?.name || '',
-        _id: entry._id   // keep id for updates/deletes
+        Date: entry.date.toISOString().slice(0, 10),
+        ...entry.data,
+        Remarks: entry.data.Remarks || entry.remarks || '',
+        Amount: entry.amount,
+        Rate: entry.data.Rate || entry.rate,
+        Quantity: entry.data.Quantity || entry.data.Weight || entry.data.Bags || entry.quantity,
+        'Supplier Name': entry.data['Supplier Name'] || '',
+        'Challan Number': entry.data['Challan Number'] || '',
+        'Vehicle Number': entry.data['Vehicle Number'] || '',
       };
       acc[material].push(frontendEntry);
       return acc;
@@ -77,7 +74,6 @@ const getAllEntries = async (req, res) => {
   }
 };
 
-// Add a new entry (material + entry)
 const addEntry = async (req, res) => {
   try {
     const { materialName, entry, projectId } = req.body;
@@ -88,32 +84,35 @@ const addEntry = async (req, res) => {
     const selectedProjectId = projectId || entry.projectId;
     const project = await ensureProjectAccess(selectedProjectId, req.userId);
     if (!project) return res.status(400).json({ message: 'Valid project is required' });
-    if (!entry.Date || !entry['Supplier Name'] || entry.Quantity == null || entry.Rate == null) {
-      return res.status(400).json({ message: 'Date, Supplier Name, Quantity and Rate are required' });
+
+    if (!entry.Date || !entry['Supplier Name'] || (entry.Quantity == null && entry.Weight == null && entry.Bags == null)) {
+      return res.status(400).json({ message: 'Date, Supplier Name and Quantity (or Weight/Bags) are required' });
     }
 
-    const existingMaterial = await MaterialEntry.findOne({
-      projectId: selectedProjectId,
-      materialName: { $regex: `^${escapeRegex(trimmedMaterialName)}$`, $options: 'i' }
-    }).select('materialName');
     const isMaterialCreation = String(entry['Supplier Name']).trim().toLowerCase() === 'initial stock';
-
-    if (isMaterialCreation && existingMaterial) {
-      return res.status(400).json({ message: 'Material already exists for this project' });
+    if (isMaterialCreation) {
+      const existing = await MaterialEntry.findOne({
+        projectId: selectedProjectId,
+        materialName: { $regex: `^${escapeRegex(trimmedMaterialName)}$`, $options: 'i' }
+      });
+      if (existing) return res.status(400).json({ message: 'Material already exists for this project' });
     }
+
+    let quantity = entry.Quantity || entry.Weight || entry.Bags || 0;
+    let rate = entry.Rate || 0;
+    let amount = quantity * rate;
 
     const newEntry = new MaterialEntry({
       projectId: selectedProjectId,
-      materialName: existingMaterial?.materialName || trimmedMaterialName,
+      materialName: trimmedMaterialName,
       date: entry.Date,
-      challanNumber: entry['Challan Number'] || '',
-      vehicleNumber: entry['Vehicle Number'] || '',
-      supplierName: entry['Supplier Name'],
-      quantity: entry.Quantity,
-      rate: entry.Rate,
-      amount: entry.Amount || entry.Quantity * entry.Rate,
+      data: { ...entry },
+      quantity,
+      rate,
+      amount,
       remarks: entry.Remarks || ''
     });
+
     await newEntry.save();
     res.status(201).json({ message: 'Entry added', entry: newEntry });
   } catch (err) {
@@ -121,13 +120,13 @@ const addEntry = async (req, res) => {
   }
 };
 
-// Update an entry
 const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
     const entry = await MaterialEntry.findById(id);
     if (!entry) return res.status(404).json({ message: 'Entry not found' });
+
     if (entry.projectId) {
       const existingProject = await ensureProjectAccess(entry.projectId, req.userId);
       if (!existingProject) return res.status(403).json({ message: 'Not authorized for this entry' });
@@ -136,25 +135,25 @@ const updateEntry = async (req, res) => {
     const project = await ensureProjectAccess(selectedProjectId, req.userId);
     if (!project) return res.status(400).json({ message: 'Valid project is required' });
 
-    // Map frontend fields to model fields
     entry.projectId = selectedProjectId;
-    entry.date = updatedData.Date || entry.date;
-    entry.challanNumber = updatedData['Challan Number'] || entry.challanNumber;
-    entry.vehicleNumber = updatedData['Vehicle Number'] || entry.vehicleNumber;
-    entry.supplierName = updatedData['Supplier Name'] || entry.supplierName;
-    entry.quantity = updatedData.Quantity != null ? updatedData.Quantity : entry.quantity;
-    entry.rate = updatedData.Rate != null ? updatedData.Rate : entry.rate;
-    entry.remarks = updatedData.Remarks || entry.remarks;
-    // amount auto‑recalculated in pre('save')
-    await entry.save();
+    if (updatedData.Date) entry.date = updatedData.Date;
+    if (updatedData.Remarks !== undefined) entry.remarks = updatedData.Remarks;
 
+    entry.data = { ...entry.data, ...updatedData };
+
+    let quantity = entry.data.Quantity || entry.data.Weight || entry.data.Bags || 0;
+    let rate = entry.data.Rate || 0;
+    entry.quantity = quantity;
+    entry.rate = rate;
+    entry.amount = quantity * rate;
+
+    await entry.save();
     res.json({ message: 'Entry updated', entry });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Delete an entry
 const deleteEntry = async (req, res) => {
   try {
     const { id } = req.params;
@@ -185,8 +184,17 @@ const getMaterialNames = async (req, res) => {
         { projectId: null }
       ];
     }
-    const names = await MaterialEntry.distinct('materialName', query);
-    res.json(names.sort((a, b) => a.localeCompare(b)));
+    const entries = await MaterialEntry.find(query).select('materialName createdAt').sort({ createdAt: 1 });
+    const seen = new Set();
+    const orderedNames = [];
+    for (const entry of entries) {
+      const name = entry.materialName;
+      if (!seen.has(name)) {
+        seen.add(name);
+        orderedNames.push(name);
+      }
+    }
+    res.json(orderedNames);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -202,19 +210,13 @@ const renameMaterial = async (req, res) => {
     const query = await getMaterialScopeQuery(materialName, projectId, req.userId);
     if (!query) return res.status(404).json({ message: 'Project not found' });
 
-    const duplicateQuery = {
-      materialName: { $regex: `^${escapeRegex(trimmedName)}$`, $options: 'i' }
-    };
-    if (projectId) {
-      duplicateQuery.projectId = projectId;
-    } else {
-      duplicateQuery.$or = [
-        { projectId: { $in: await getOwnedProjectIds(req.userId) } },
-        { projectId: { $exists: false } },
-        { projectId: null }
-      ];
-    }
-
+    const duplicateQuery = { materialName: { $regex: `^${escapeRegex(trimmedName)}$`, $options: 'i' } };
+    if (projectId) duplicateQuery.projectId = projectId;
+    else duplicateQuery.$or = [
+      { projectId: { $in: await getOwnedProjectIds(req.userId) } },
+      { projectId: { $exists: false } },
+      { projectId: null }
+    ];
     const duplicate = await MaterialEntry.findOne(duplicateQuery).select('materialName');
     if (duplicate && duplicate.materialName.toLowerCase() !== materialName.toLowerCase()) {
       return res.status(400).json({ message: 'Material name already exists for this project' });
@@ -234,7 +236,6 @@ const deleteMaterial = async (req, res) => {
     const { projectId } = req.query;
     const query = await getMaterialScopeQuery(materialName, projectId, req.userId);
     if (!query) return res.status(404).json({ message: 'Project not found' });
-
     const result = await MaterialEntry.deleteMany(query);
     if (result.deletedCount === 0) return res.status(404).json({ message: 'Material not found' });
     res.json({ message: 'Material deleted', deletedCount: result.deletedCount });
@@ -242,20 +243,15 @@ const deleteMaterial = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// Get total stock for a specific material (case‑insensitive)
+
 const getMaterialStock = async (req, res) => {
   try {
-    const { materialName } = req.params; // e.g. "sand"
-    const matchStage = {
-      materialName: { $regex: `^${materialName}$`, $options: 'i' }
-    };
-    // If you have project filtering, you can add projectId from query
-    if (req.query.projectId) {
-      matchStage.projectId = req.query.projectId;
-    }
+    const { materialName } = req.params;
+    const matchStage = { materialName: { $regex: `^${materialName}$`, $options: 'i' } };
+    if (req.query.projectId) matchStage.projectId = req.query.projectId;
     const result = await MaterialEntry.aggregate([
       { $match: matchStage },
-      { $group: { _id: null, totalStock: { $sum: "$quantity" } } }
+      { $group: { _id: null, totalStock: { $sum: '$quantity' } } }
     ]);
     const totalStock = result.length > 0 ? result[0].totalStock : 0;
     res.json({ materialName, totalStock });
